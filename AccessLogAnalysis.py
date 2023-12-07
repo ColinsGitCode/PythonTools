@@ -108,6 +108,7 @@ def detail_analysis_by_column_and_value(total_logs_df: pd.DataFrame, col_name: s
 if __name__ == '__main__':
     the_log_short = "message_179.170.130.210.bn.2iij.net_20230930.log"
     the_log_long = "message_179.170.130.210.bn.2iij.net_20231002.log"
+    the_log_long_1031 = "message_179.170.130.210.bn.2iij.net_20231031.log"
     # log_df = log_reader(the_log_short)
     # log_df = log_reader(the_log_long)
     # select_df = select_by_value(log_df, 'logid', log_df.iloc[0]['logid']) # logid = "13"
