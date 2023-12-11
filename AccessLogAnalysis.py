@@ -69,17 +69,24 @@ def analysis_selected_dataframe(selected_df: pd.DataFrame) -> pd.DataFrame:
         selected_df_col_counts = count_column_with_ratios(selected_df, col).head(20)
         selected_df_col_counts_columns = selected_df_col_counts.columns.tolist()
         selected_df_col_counts_ndarray = selected_df_col_counts.to_numpy()
+        # 期望的行数
+        desired_rows = 20
+        # 计算需要填充的行数
+        padding_rows = max(0, desired_rows - selected_df_col_counts_ndarray.shape[0])
+        # 使用pad函数在底部填充零行
+        selected_df_col_counts_ndarray_padded = np.pad(selected_df_col_counts_ndarray, ((0, padding_rows), (0, 0)), mode='constant', constant_values=0)
         total_column_list = total_column_list + selected_df_col_counts_columns
-        total_ndarray = np.concatenate((total_ndarray, selected_df_col_counts_ndarray), axis=1)  # 注意指定axis=1以进行横向拼接
+        total_ndarray = np.concatenate((total_ndarray, selected_df_col_counts_ndarray_padded), axis=1)  # 注意指定axis=1以进行横向拼接
     total_dataframe = pd.DataFrame(total_ndarray, columns=total_column_list)
     total_dataframe = total_dataframe.drop(['default_1', 'default_2', 'default_3'], axis=1)
     return total_dataframe
 
 
-def detail_analysis_by_column_and_value(total_logs_df: pd.DataFrame, col_name: str, col_value):
+def detail_analysis_by_column_and_value(total_logs_df: pd.DataFrame, col_name: str, col_value, logdate: str):
     """
     解析Dataframe表格中的 "service", "srcport", "dstport", "srcip", "dstip" 中的五项指标的计数排名及百分比
     以及 srccountry 和 dstcountry 2项指标的计数排名及百分比
+    也含有action
     并存储为 execl表格
     :param total_logs_df:
     :param col_name:
@@ -88,29 +95,83 @@ def detail_analysis_by_column_and_value(total_logs_df: pd.DataFrame, col_name: s
     """
     selected_df_by_column_name_and_value = select_by_column_name_and_value(total_logs_df, col_name, col_value)
     detail_result_total_df = analysis_selected_dataframe(selected_df_by_column_name_and_value)
-    output_execl_name = ("LongLogsAnalysisResultsTables\\" + col_name + col_value.strip("\"") + "DetailAnalysisResults.xlsx")
+    output_execl_name = ("LongLogsAnalysisResultsTables\\" + logdate + "\\" + col_name + col_value.strip("\"") + "DetailAnalysisResults.xlsx")
     detail_result_total_df.to_excel(output_execl_name, index=False)
     print("DataFrame saved to " + output_execl_name)
 
     srccountry_col_counts_df = (count_column_with_ratios(selected_df_by_column_name_and_value, 'srccountry').head(20))
-    output_execl_name = "LongLogsAnalysisResultsTables\\" + col_name + col_value.strip("\"") + "srccountryResults.xlsx"
+    output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\" + col_name + col_value.strip("\"") + "srccountryResults.xlsx"
     srccountry_col_counts_df.to_excel(output_execl_name, index=False)
     print("DataFrame saved to " + output_execl_name)
 
     dstcountry_col_counts_df = (count_column_with_ratios(selected_df_by_column_name_and_value, 'dstcountry').head(20))
-    output_execl_name = "LongLogsAnalysisResultsTables\\" + col_name + col_value.strip("\"") + "dstcountryResults.xlsx"
+    output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\" + col_name + col_value.strip("\"") + "dstcountryResults.xlsx"
     dstcountry_col_counts_df.to_excel(output_execl_name, index=False)
+    print("DataFrame saved to " + output_execl_name)
+
+    action_col_counts_df = (count_column_with_ratios(selected_df_by_column_name_and_value, 'action').head(20))
+    output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\" + col_name + col_value.strip("\"") + "actionResults.xlsx"
+    action_col_counts_df.to_excel(output_execl_name, index=False)
     print("DataFrame saved to " + output_execl_name)
 
     return detail_result_total_df, srccountry_col_counts_df, dstcountry_col_counts_df
 
 
+def statics_for_log_levels(total_logs_df: pd.DataFrame, logdate: str):
+    """
+    Result for sheet: LogLevelRatios
+    :param total_logs_df:
+    :param logdate:
+    :return:
+    """
+    df_loglevel_counts = count_column_with_ratios(total_logs_df, "level").head(20)
+    output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\LogLevelRatios_Results.xlsx"
+    df_loglevel_counts.to_excel(output_execl_name, index=False)
+    print("DataFrame saved to " + output_execl_name)
+    return df_loglevel_counts
+
+
+def statics_all_logid_ratio(total_logs_df: pd.DataFrame, logdate: str):
+    """
+    Result for sheet: AllLogidRatios: Logid, Logid计数， Logid百分比
+    :param total_logs_df:
+    :param logdate:
+    :return:
+    """
+    df_logid_counts = count_column_with_ratios(total_logs_df, "logid").head(20)
+    output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\AllLogidRatios_Results.xlsx"
+    df_logid_counts.to_excel(output_execl_name, index=False)
+    print("DataFrame saved to " + output_execl_name)
+    return df_logid_counts
+
+
 if __name__ == '__main__':
-    the_log_short = "message_179.170.130.210.bn.2iij.net_20230930.log"
-    the_log_long = "message_179.170.130.210.bn.2iij.net_20231002.log"
-    the_log_long_1031 = "message_179.170.130.210.bn.2iij.net_20231031.log"
-    # log_df = log_reader(the_log_short)
-    # log_df = log_reader(the_log_long)
-    # select_df = select_by_value(log_df, 'logid', log_df.iloc[0]['logid']) # logid = "13"
+    # 0,1,53,220
+    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231208.log"
+    # logdate = "LogAnalysis_1208"
+
+    # 0,1,2,220
+    the_log_name = "message_179.170.130.210.bn.2iij.net_20231209.log"
+    logdate = "LogAnalysis_1209"
+
+    # 0,1,131,220
+    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
+    # logdate = "LogAnalysis_1210"
+
+
+    all_logs_df = log_reader(the_log_name)
+
+    print("index = 0 value = " + all_logs_df.iloc[0]['logid'])
+    print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
+    print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
+    print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
+    statics_all_logid_ratio(all_logs_df, logdate)
+    statics_for_log_levels(all_logs_df, logdate)
+    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
+    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
+    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[131]['logid'], logdate)
+    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
+
+
 
 
