@@ -151,12 +151,12 @@ if __name__ == '__main__':
     # logdate = "LogAnalysis_1208"
 
     # 0,1,2,220
-    the_log_name = "message_179.170.130.210.bn.2iij.net_20231209.log"
-    logdate = "LogAnalysis_1209"
+    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231209.log"
+    # logdate = "LogAnalysis_1209"
 
     # 0,1,131,220
-    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
-    # logdate = "LogAnalysis_1210"
+    the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
+    logdate = "LogAnalysis_1210"
 
 
     all_logs_df = log_reader(the_log_name)
@@ -165,11 +165,12 @@ if __name__ == '__main__':
     print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
     print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
     print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
+
     statics_all_logid_ratio(all_logs_df, logdate)
     statics_for_log_levels(all_logs_df, logdate)
     detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
     detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
-    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[131]['logid'], logdate)
+    detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
     detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
 
 
