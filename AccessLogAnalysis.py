@@ -202,6 +202,16 @@ class LogAnalysis:
 
 if __name__ == '__main__':
     # pass
+
+    # print(log_id_stats_df.iloc[0]['logid'])
+    # print(log_id_stats_df.iloc[1]['logid'])
+    # print(log_id_stats_df.iloc[2]['logid'])
+    # print(log_id_stats_df.iloc[3]['logid'])
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
+
     the_log_name = "LogPlainTxt/message_179.170.130.210.bn.2iij.net_20240527.log"
     daily_log_stats_execl_prefix = "LogAnalysis_" + the_log_name.split('_')[-1].split('.')[0]
 
@@ -209,27 +219,12 @@ if __name__ == '__main__':
 
     all_logs_df = LogAnalysis.log_reader(the_log_name)
 
-    # print("index = 0 value = " + all_logs_df.iloc[0]['logid'])
-    # print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
-    # print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
-    # print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
-
     log_id_stats_df = LogAnalysis.statics_all_logid_ratio(
         total_logs_df=all_logs_df,
         output_execl_name_prefix=daily_log_stats_execl_prefix
     )
 
-    print(log_id_stats_df.iloc[0]['logid'])
-    print(log_id_stats_df.iloc[1]['logid'])
-    print(log_id_stats_df.iloc[2]['logid'])
-    print(log_id_stats_df.iloc[3]['logid'])
-
     log_level_df = LogAnalysis.statics_for_log_levels(
         total_logs_df=all_logs_df,
         output_execl_name_prefix=daily_log_stats_execl_prefix
     )
-
-    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
-    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
-    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
-    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
