@@ -1,6 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
+import re
 
 
 class LogAnalysis:
@@ -22,7 +23,10 @@ class LogAnalysis:
                 for pairs in words:
                     try:
                         ls_pairs = pairs.split("=")
-                        word_pair_dict[ls_pairs[0]] = ls_pairs[1]
+                        if ls_pairs[0] == 'logid':
+                            word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
+                        else:
+                            word_pair_dict[ls_pairs[0]] = ls_pairs[1]
                     except IndexError:
                         # ls_pairs = pairs.split("=")
                         # word_pair_dict[ls_pairs[0]] = ""
