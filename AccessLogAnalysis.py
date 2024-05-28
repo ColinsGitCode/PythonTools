@@ -9,6 +9,19 @@ import pyarrow
 os.environ["MODIN_ENGINE"] = "ray"
 
 
+class Utils:
+    @staticmethod
+    def creat_dirs(dir_path: str):
+        # 检查目录是否存在
+        if not os.path.exists(dir_path):
+            # 如果目录不存在，则创建目录
+            os.makedirs(dir_path)
+            # print(f"目录 '{dir_path}' 已创建")
+        else:
+            pass
+            # print(f"目录 '{dir_path}' 已存在")
+
+
 class LogAnalysis:
     @staticmethod
     def log_reader(log_name: str) -> pd.DataFrame:
@@ -46,11 +59,11 @@ class LogAnalysis:
         """
         根据列名分组，分组后计数，计数后进行降序排序
         """
-        count_col_name = col_name + "计数"
+        count_col_name = col_name + " Counts"
         col_counts_df = df_name.groupby(col_name).size().reset_index(name=count_col_name)
         sorted_df = col_counts_df.sort_values(by=count_col_name, ascending=False)
         total_counts = sorted_df[count_col_name].sum()
-        sorted_df[col_name + "%比"] = sorted_df[count_col_name].apply(lambda x: (round(x / total_counts, 4)) * 100)
+        sorted_df[col_name + "%"] = sorted_df[count_col_name].apply(lambda x: (round(x / total_counts, 4)) * 100)
         return sorted_df
 
     @staticmethod
@@ -149,57 +162,73 @@ class LogAnalysis:
         return detail_result_total_df, srccountry_col_counts_df, dstcountry_col_counts_df
 
     @staticmethod
-    def statics_for_log_levels(total_logs_df: pd.DataFrame, logdate: str):
+    def statics_for_log_levels(total_logs_df: pd.DataFrame, output_execl_name_prefix: str):
         """
         Result for sheet: LogLevelRatios
         :param total_logs_df:
-        :param logdate:
+        :param output_execl_name:
         :return:
         """
+        output_execl_name = output_execl_name_prefix + "/" + output_execl_name_prefix + "_Log_Level_Stats.xlsx"
         df_loglevel_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "level").head(20)
-        output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\LogLevelRatios_Results.xlsx"
-        df_loglevel_counts.to_excel(output_execl_name, index=False)
+        df_loglevel_counts.to_excel(
+            excel_writer=output_execl_name,
+            sheet_name='Log Level Stats',
+            float_format='%.2f',
+            index=False
+        )
         print("DataFrame saved to " + output_execl_name)
         return df_loglevel_counts
 
     @staticmethod
-    def statics_all_logid_ratio(total_logs_df: pd.DataFrame, logdate: str):
+    def statics_all_logid_ratio(total_logs_df: pd.DataFrame, output_execl_name_prefix: str):
         """
         Result for sheet: AllLogidRatios: Logid, Logid计数， Logid百分比
         :param total_logs_df:
-        :param logdate:
+        :param output_execl_name:
         :return:
         """
-        df_logid_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "logid").head(20)
-        output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\AllLogidRatios_Results.xlsx"
-        df_logid_counts.to_excel(output_execl_name, index=False)
+        output_execl_name = output_execl_name_prefix + "/" + output_execl_name_prefix + "_Log_ID_Stats.xlsx"
+        df_log_id_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "logid").head(20)
+        df_log_id_counts.to_excel(
+            excel_writer=output_execl_name,
+            sheet_name='Log ID Stats',
+            float_format='%.2f',
+            index=False
+        )
         print("DataFrame saved to " + output_execl_name)
-        return df_logid_counts
+        return df_log_id_counts
 
 
 if __name__ == '__main__':
-    pass
-    # 0,1,53,220
-    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231208.log"
-    # logdate = "LogAnalysis_1208"
+    # pass
+    the_log_name = "LogPlainTxt/message_179.170.130.210.bn.2iij.net_20240527.log"
+    daily_log_stats_execl_prefix = "LogAnalysis_" + the_log_name.split('_')[-1].split('.')[0]
 
-    # 0,1,2,220
-    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231209.log"
-    # logdate = "LogAnalysis_1209"
+    Utils.creat_dirs(daily_log_stats_execl_prefix)
 
-    # # 0,1,131,220
-    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
-    # logdate = "LogAnalysis_1210"
-    #
-    # all_logs_df = LogAnalysis.log_reader(the_log_name)
-    #
+    all_logs_df = LogAnalysis.log_reader(the_log_name)
+
     # print("index = 0 value = " + all_logs_df.iloc[0]['logid'])
     # print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
     # print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
     # print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
-    #
-    # LogAnalysis.statics_all_logid_ratio(all_logs_df, logdate)
-    # LogAnalysis.statics_for_log_levels(all_logs_df, logdate)
+
+    log_id_stats_df = LogAnalysis.statics_all_logid_ratio(
+        total_logs_df=all_logs_df,
+        output_execl_name_prefix=daily_log_stats_execl_prefix
+    )
+
+    print(log_id_stats_df.iloc[0]['logid'])
+    print(log_id_stats_df.iloc[1]['logid'])
+    print(log_id_stats_df.iloc[2]['logid'])
+    print(log_id_stats_df.iloc[3]['logid'])
+
+    log_level_df = LogAnalysis.statics_for_log_levels(
+        total_logs_df=all_logs_df,
+        output_execl_name_prefix=daily_log_stats_execl_prefix
+    )
+
     # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
     # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
     # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
