@@ -1,7 +1,12 @@
-import pandas as pd
+import os
+import modin.pandas as pd
 from tqdm import tqdm
 import numpy as np
 import re
+import ray
+import pyarrow
+
+os.environ["MODIN_ENGINE"] = "ray"
 
 
 class LogAnalysis:
@@ -173,6 +178,7 @@ class LogAnalysis:
 
 
 if __name__ == '__main__':
+    pass
     # 0,1,53,220
     # the_log_name = "message_179.170.130.210.bn.2iij.net_20231208.log"
     # logdate = "LogAnalysis_1208"
@@ -181,20 +187,20 @@ if __name__ == '__main__':
     # the_log_name = "message_179.170.130.210.bn.2iij.net_20231209.log"
     # logdate = "LogAnalysis_1209"
 
-    # 0,1,131,220
-    the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
-    logdate = "LogAnalysis_1210"
-
-    all_logs_df = LogAnalysis.log_reader(the_log_name)
-
-    print("index = 0 value = " + all_logs_df.iloc[0]['logid'])
-    print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
-    print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
-    print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
-
-    LogAnalysis.statics_all_logid_ratio(all_logs_df, logdate)
-    LogAnalysis.statics_for_log_levels(all_logs_df, logdate)
-    LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
-    LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
-    LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
-    LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
+    # # 0,1,131,220
+    # the_log_name = "message_179.170.130.210.bn.2iij.net_20231210.log"
+    # logdate = "LogAnalysis_1210"
+    #
+    # all_logs_df = LogAnalysis.log_reader(the_log_name)
+    #
+    # print("index = 0 value = " + all_logs_df.iloc[0]['logid'])
+    # print("index = 1 value = " + all_logs_df.iloc[1]['logid'])
+    # print("index = 2 value = " + all_logs_df.iloc[2]['logid'])
+    # print("index = 220 value = " + all_logs_df.iloc[220]['logid'])
+    #
+    # LogAnalysis.statics_all_logid_ratio(all_logs_df, logdate)
+    # LogAnalysis.statics_for_log_levels(all_logs_df, logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[0]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[1]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
+    # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
