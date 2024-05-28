@@ -1,3 +1,5 @@
 /log_samples.txt
 *.log
 *.xlsx
+*.tar.gz
+*.csv
