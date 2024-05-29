@@ -1,5 +1,6 @@
 import os
-import modin.pandas as pd
+# import modin.pandas as modin_pd
+import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import re
@@ -7,6 +8,35 @@ import ray
 import pyarrow
 
 os.environ["MODIN_ENGINE"] = "ray"
+
+
+class Const:
+    HEAD_NUMBER = 100
+    SELECT_COLUMNS = [
+        'date',
+        'time',
+        # 'devname',
+        # 'devid',
+        # 'eventtime',
+        # 'type',
+        # 'subtype',
+        'level',
+        'srcip',
+        'srcport',
+        'dstip',
+        'dstport',
+        'srccountry',
+        'dstcountry',
+        # 'action',
+        # 'service',
+        # 'app',
+        # 'duration',
+        # 'sentbyte',
+        # 'rcvdbyte'
+        # 'logdesc',
+        # 'user',
+        'logid'
+    ]
 
 
 class Utils:
@@ -20,6 +50,20 @@ class Utils:
         else:
             pass
             # print(f"目录 '{dir_path}' 已存在")
+
+    @staticmethod
+    def get_all_files_in_directory(directory):
+        # 初始化一个空列表用于存储文件相对路径
+        file_paths = []
+
+        # 使用os.walk遍历目录及其子目录
+        for root, _, files in os.walk(directory):
+            for file in files:
+                # 构建文件的相对路径
+                relative_path = os.path.relpath(os.path.join(root, file), directory)
+                file_paths.append(directory + "/" + relative_path)
+
+        return file_paths
 
 
 class LogAnalysis:
@@ -41,10 +85,11 @@ class LogAnalysis:
                 for pairs in words:
                     try:
                         ls_pairs = pairs.split("=")
-                        if ls_pairs[0] == 'logid':
-                            word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
-                        else:
-                            word_pair_dict[ls_pairs[0]] = ls_pairs[1]
+                        if ls_pairs[0] in Const.SELECT_COLUMNS:
+                            if ls_pairs[0] == 'logid':
+                                word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
+                            else:
+                                word_pair_dict[ls_pairs[0]] = ls_pairs[1]
                     except IndexError:
                         # ls_pairs = pairs.split("=")
                         # word_pair_dict[ls_pairs[0]] = ""
@@ -63,7 +108,7 @@ class LogAnalysis:
         col_counts_df = df_name.groupby(col_name).size().reset_index(name=count_col_name)
         sorted_df = col_counts_df.sort_values(by=count_col_name, ascending=False)
         total_counts = sorted_df[count_col_name].sum()
-        sorted_df[col_name + "%"] = sorted_df[count_col_name].apply(lambda x: (round(x / total_counts, 4)) * 100)
+        sorted_df[col_name + " %"] = sorted_df[count_col_name].apply(lambda x: (round(x / total_counts, 4)) * 100)
         return sorted_df
 
     @staticmethod
@@ -162,7 +207,7 @@ class LogAnalysis:
         return detail_result_total_df, srccountry_col_counts_df, dstcountry_col_counts_df
 
     @staticmethod
-    def statics_for_log_levels(total_logs_df: pd.DataFrame, output_execl_name_prefix: str):
+    def statics_for_log_levels(total_logs_df: pd.DataFrame, output_execl_name_prefix: str, to_execl=False):
         """
         Result for sheet: LogLevelRatios
         :param total_logs_df:
@@ -171,17 +216,21 @@ class LogAnalysis:
         """
         output_execl_name = output_execl_name_prefix + "/" + output_execl_name_prefix + "_Log_Level_Stats.xlsx"
         df_loglevel_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "level").head(20)
-        df_loglevel_counts.to_excel(
-            excel_writer=output_execl_name,
-            sheet_name='Log Level Stats',
-            float_format='%.2f',
-            index=False
-        )
-        print("DataFrame saved to " + output_execl_name)
+        if to_execl:
+            df_loglevel_counts.to_excel(
+                excel_writer=output_execl_name,
+                sheet_name='Log Level Stats',
+                float_format='%.2f',
+                index=False
+            )
+            print("DataFrame saved to " + output_execl_name)
+        else:
+            pass
+
         return df_loglevel_counts
 
     @staticmethod
-    def statics_all_logid_ratio(total_logs_df: pd.DataFrame, output_execl_name_prefix: str):
+    def statics_all_logid_ratio(total_logs_df: pd.DataFrame, output_execl_name_prefix: str, to_execl=False):
         """
         Result for sheet: AllLogidRatios: Logid, Logid计数， Logid百分比
         :param total_logs_df:
@@ -189,19 +238,82 @@ class LogAnalysis:
         :return:
         """
         output_execl_name = output_execl_name_prefix + "/" + output_execl_name_prefix + "_Log_ID_Stats.xlsx"
-        df_log_id_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "logid").head(20)
-        df_log_id_counts.to_excel(
-            excel_writer=output_execl_name,
-            sheet_name='Log ID Stats',
-            float_format='%.2f',
-            index=False
-        )
-        print("DataFrame saved to " + output_execl_name)
+        df_log_id_counts = LogAnalysis.count_column_with_ratios(total_logs_df, "logid")
+        if to_execl:
+            df_log_id_counts.to_excel(
+                excel_writer=output_execl_name,
+                sheet_name='Log ID Stats',
+                float_format='%.2f',
+                index=False
+            )
+            print("DataFrame saved to " + output_execl_name)
+        else:
+            pass
+
         return df_log_id_counts
+
+    @staticmethod
+    def combine_dataframe_by_set_index(df1: pd.DataFrame, df2: pd.DataFrame, index_col: str, count_col: str):
+        select_columns = [index_col, count_col]
+        print("df1.columns: ", df1.columns)
+        print("df2.columns: ", df2.columns)
+        # df1 = df1[select_columns].set_index(index_col)
+        df1 = df1.set_index(index_col)
+        df2 = df2.set_index(index_col)
+        # df2 = df2[select_columns].set_index(index_col)
+        print("df1.columns: ", df1.columns)
+        print("df2.columns: ", df2.columns)
+
+        # 确保索引列为字符串
+        df1.index = df1.index.astype(str)
+        df2.index = df2.index.astype(str)
+
+        # 合并两个DataFrame，按索引列处理，缺失值填充为0
+        df1 = df1.apply(pd.to_numeric, errors='coerce').fillna(0)
+        df2 = df2.apply(pd.to_numeric, errors='coerce').fillna(0)
+        # 按索引合并并将相同列相加
+        add_df = df1.add(df2, fill_value=0).fillna(0)
+        sorted_df = add_df.sort_values(by=count_col, ascending=False)
+        print("sorted_df.columns: ", sorted_df.columns)
+        # sorted_df = sorted_df[count_col].astype(int)
+        total_counts = sorted_df[count_col].sum()
+        sorted_df[index_col + " %"] = sorted_df[count_col].apply(lambda x: (round(x / total_counts, 10)) * 100)
+        print("sorted_df.columns: ", sorted_df.columns)
+
+        return sorted_df
+
+    @staticmethod
+    def analysis_logs_monthly(logs_path: str):
+        log_files = Utils.get_all_files_in_directory(logs_path)
+
+        monthly_log_id_stats_df = pd.DataFrame({'logid': [], 'logid Counts': []})
+        monthly_log_level_stats_df = pd.DataFrame({'level': [], 'level Counts': []})
+
+        for the_log_name in log_files:
+            daily_log_stats_execl_prefix = "LogAnalysis_" + the_log_name.split('_')[-1].split('.')[0]
+            Utils.creat_dirs(daily_log_stats_execl_prefix)
+            daily_logs_df = LogAnalysis.log_reader(the_log_name)
+            log_id_stats_df = LogAnalysis.statics_all_logid_ratio(
+                total_logs_df=daily_logs_df,
+                output_execl_name_prefix=daily_log_stats_execl_prefix
+            )
+            print("monthly_log_id_stats_df.columns: ", monthly_log_id_stats_df.columns)
+            print("log_id_stats_df.columns: ", log_id_stats_df.columns)
+            monthly_log_id_stats_df = LogAnalysis.combine_dataframe_by_set_index(monthly_log_id_stats_df, log_id_stats_df, 'logid', 'logid Counts')
+
+            log_level_stats_df = LogAnalysis.statics_for_log_levels(
+                total_logs_df=daily_logs_df,
+                output_execl_name_prefix=daily_log_stats_execl_prefix
+            )
+            print("monthly_log_level_stats_df.columns: ", monthly_log_level_stats_df.columns)
+            print("log_level_stats_df.columns: ", log_level_stats_df.columns)
+            monthly_log_level_stats_df = LogAnalysis.combine_dataframe_by_set_index(monthly_log_level_stats_df, log_level_stats_df, 'level', 'level Counts')
+
+        return monthly_log_id_stats_df, monthly_log_level_stats_df
 
 
 if __name__ == '__main__':
-    # pass
+    pass
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
@@ -212,19 +324,23 @@ if __name__ == '__main__':
     # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[2]['logid'], logdate)
     # LogAnalysis.detail_analysis_by_column_and_value(all_logs_df, 'logid', all_logs_df.iloc[220]['logid'], logdate)
 
-    the_log_name = "LogPlainTxt/message_179.170.130.210.bn.2iij.net_20240527.log"
-    daily_log_stats_execl_prefix = "LogAnalysis_" + the_log_name.split('_')[-1].split('.')[0]
-
-    Utils.creat_dirs(daily_log_stats_execl_prefix)
-
-    all_logs_df = LogAnalysis.log_reader(the_log_name)
-
-    log_id_stats_df = LogAnalysis.statics_all_logid_ratio(
-        total_logs_df=all_logs_df,
-        output_execl_name_prefix=daily_log_stats_execl_prefix
-    )
-
-    log_level_df = LogAnalysis.statics_for_log_levels(
-        total_logs_df=all_logs_df,
-        output_execl_name_prefix=daily_log_stats_execl_prefix
-    )
+    # the_log_name = "LogPlainTxt/message_179.170.130.210.bn.2iij.net_20240527.log"
+    # daily_log_stats_execl_prefix = "LogAnalysis_" + the_log_name.split('_')[-1].split('.')[0]
+    #
+    # Utils.creat_dirs(daily_log_stats_execl_prefix)
+    #
+    # all_logs_df = LogAnalysis.log_reader(the_log_name)
+    #
+    # log_id_stats_df = LogAnalysis.statics_all_logid_ratio(
+    #     total_logs_df=all_logs_df,
+    #     output_execl_name_prefix=daily_log_stats_execl_prefix
+    # )
+    # log_id_stats_df_mem = log_id_stats_df.memory_usage(deep=True).sum()
+    # print(log_id_stats_df_mem/(1024))
+    #
+    # log_level_df = LogAnalysis.statics_for_log_levels(
+    #     total_logs_df=all_logs_df,
+    #     output_execl_name_prefix=daily_log_stats_execl_prefix
+    # )
+    # log_level_df_mem = log_level_df.memory_usage(deep=True).sum()
+    # print(log_level_df_mem/(1024))
