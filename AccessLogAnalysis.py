@@ -347,8 +347,6 @@ class LogAnalysis:
                                 else:
                                     log_level_stats_dict[log_level_str] = 1
 
-                                if log_level_str == ''
-
                         except IndexError:
                             # ls_pairs = pairs.split("=")
                             # word_pair_dict[ls_pairs[0]] = ""
