@@ -370,7 +370,7 @@ class LogAnalysis:
         log_level_stats_df = log_level_stats_df.sort_values(by='%(percentage)', ascending=False)
         log_level_stats_execl_name = 'Monthly_Logs_Level_Stats_' + month_str + ".xlsx"
         log_level_stats_df.to_excel(
-            excel_writer=log_id_stats_execl_name,
+            excel_writer=log_level_stats_execl_name,
             sheet_name='Logs Level Stats',
             float_format='%.6f',
             engine='openpyxl',
@@ -382,7 +382,9 @@ class LogAnalysis:
 
 
 if __name__ == '__main__':
-    pass
+    # pass
+    logs_dir = 'LogTar/var/log/syslog/179.170.130.210.bn.2iij.net'
+    id_df, level_df = LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
