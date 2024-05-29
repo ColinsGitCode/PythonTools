@@ -12,14 +12,23 @@ os.environ["MODIN_ENGINE"] = "ray"
 
 class Const:
     HEAD_NUMBER = 100
+
+    LOG_LEVEL_FILTER = [
+        # 'notice',
+        # 'warning',
+        # 'alert',
+        # 'information',
+        'error'
+    ]
+
     SELECT_COLUMNS = [
         'date',
         'time',
-        # 'devname',
-        # 'devid',
+        'devname',
+        'devid',
         # 'eventtime',
-        # 'type',
-        # 'subtype',
+        'type',
+        'subtype',
         'level',
         'srcip',
         'srcport',
@@ -27,14 +36,14 @@ class Const:
         'dstport',
         'srccountry',
         'dstcountry',
-        # 'action',
-        # 'service',
-        # 'app',
-        # 'duration',
-        # 'sentbyte',
-        # 'rcvdbyte'
-        # 'logdesc',
-        # 'user',
+        'action',
+        'service',
+        'app',
+        'duration',
+        'sentbyte',
+        'rcvdbyte'
+        'logdesc',
+        'user',
         'logid'
     ]
 
@@ -80,21 +89,26 @@ class LogAnalysis:
             split_results = []
             # for line in file:
             for line in tqdm(file, total=total_lines, desc="Reading logs by lines:"):
+                record_the_line = False
                 words = line.split()[4:]
                 word_pair_dict = {}
                 for pairs in words:
                     try:
                         ls_pairs = pairs.split("=")
-                        if ls_pairs[0] in Const.SELECT_COLUMNS:
-                            if ls_pairs[0] == 'logid':
-                                word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
-                            else:
-                                word_pair_dict[ls_pairs[0]] = ls_pairs[1]
+                        if ls_pairs[0] == 'level' and re.sub(r'[^a-zA-Z]', '', ls_pairs[1]) in Const.LOG_LEVEL_FILTER:
+                            record_the_line = True
+                            word_pair_dict[ls_pairs[0]] = re.sub(r'[^a-zA-Z]', '', ls_pairs[1])
+                        elif ls_pairs[0] == 'logid':
+                            word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
+                        else:
+                            word_pair_dict[ls_pairs[0]] = ls_pairs[1]
                     except IndexError:
                         # ls_pairs = pairs.split("=")
                         # word_pair_dict[ls_pairs[0]] = ""
                         pass
-                split_results.append(word_pair_dict)
+
+                if record_the_line:
+                    split_results.append(word_pair_dict)
 
         results_df = pd.DataFrame(split_results)
         return results_df
@@ -380,11 +394,79 @@ class LogAnalysis:
 
         return log_id_stats_df, log_level_stats_df
 
+    @staticmethod
+    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str):
+        log_files = Utils.get_all_files_in_directory(logs_path)
+        split_results = []
+        for the_log_name in log_files:
+            logs_date = the_log_name.split('_')[-1].split('.')[0]
+            reading_desc = "Reading logs on " + logs_date + " by lines: "
+            with open(the_log_name, 'r', encoding='cp1252') as file:
+                # Get the total number of lines in the file
+                total_lines = sum(1 for _ in file)
+
+            with open(the_log_name, 'r', encoding='cp1252') as file:
+                # for line in file:
+                for line in tqdm(file, total=total_lines, desc=reading_desc):
+                    record_the_line = False
+                    words = line.split()[4:]
+                    word_pair_dict = {}
+                    for pairs in words:
+                        try:
+                            ls_pairs = pairs.split("=")
+                            if ls_pairs[0] == 'level' and re.sub(r'[^a-zA-Z]', '', ls_pairs[1]) == level_filter:
+                                record_the_line = True
+                                word_pair_dict[ls_pairs[0]] = re.sub(r'[^a-zA-Z]', '', ls_pairs[1])
+                            elif ls_pairs[0] == 'logid':
+                                word_pair_dict[ls_pairs[0]] = re.sub(r'\D', '', ls_pairs[1])
+                            else:
+                                word_pair_dict[ls_pairs[0]] = ls_pairs[1]
+                        except IndexError:
+                            pass
+
+                    if record_the_line:
+                        split_results.append(word_pair_dict)
+
+        monthly_specific_level_df = pd.DataFrame(split_results)
+
+        monthly_specific_level_logid_stats_df = LogAnalysis.statics_all_logid_ratio(
+            total_logs_df=monthly_specific_level_df,
+            output_execl_name_prefix="",
+            to_execl=False
+        )
+        monthly_specific_level_df_mem = monthly_specific_level_df.memory_usage(deep=True).sum()
+        print('monthly_specific_level_df_mem: ', monthly_specific_level_df_mem / (1024))
+
+        monthly_specific_level_name = 'Monthly_' + level_filter + '_Logs_Data_' + month_str + ".xlsx"
+        monthly_specific_level_df.to_excel(
+            excel_writer=monthly_specific_level_name,
+            sheet_name='Monthly Specific Level Logs',
+            float_format='%.6f',
+            engine='openpyxl',
+            index=False
+        )
+        print("DataFrame saved to " + monthly_specific_level_name)
+
+        monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".xlsx"
+        monthly_specific_level_logid_stats_df.to_excel(
+            excel_writer=monthly_specific_level_logid_name,
+            sheet_name='Monthly Specific Level Logs Classified by Log ID',
+            float_format='%.6f',
+            engine='openpyxl',
+            index=False
+        )
+        print("DataFrame saved to " + monthly_specific_level_logid_name)
+
+        return monthly_specific_level_df, monthly_specific_level_logid_stats_df
+
 
 if __name__ == '__main__':
     # pass
+    # logs_dir = 'LogPlainTxt'
+    # id_df, level_df = LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
+
     logs_dir = 'LogTar/var/log/syslog/179.170.130.210.bn.2iij.net'
-    id_df, level_df = LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
+    id_df, level_df = LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'alert')
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
