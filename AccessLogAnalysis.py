@@ -283,7 +283,7 @@ class LogAnalysis:
         return sorted_df
 
     @staticmethod
-    def analysis_logs_monthly(logs_path: str):
+    def analysis_logs_monthly_by_dataframe(logs_path: str):
         log_files = Utils.get_all_files_in_directory(logs_path)
 
         monthly_log_id_stats_df = pd.DataFrame({'logid': [], 'logid Counts': []})
@@ -310,6 +310,77 @@ class LogAnalysis:
             monthly_log_level_stats_df = LogAnalysis.combine_dataframe_by_set_index(monthly_log_level_stats_df, log_level_stats_df, 'level', 'level Counts')
 
         return monthly_log_id_stats_df, monthly_log_level_stats_df
+
+    @staticmethod
+    def analysis_logs_monthly(logs_path: str, month_str: str):
+        log_id_stats_dict = {}
+        log_level_stats_dict = {}
+        log_files = Utils.get_all_files_in_directory(logs_path)
+
+        for the_log_name in log_files:
+            logs_date = the_log_name.split('_')[-1].split('.')[0]
+            reading_desc = "Reading logs on " + logs_date + " by lines: "
+            with open(the_log_name, 'r', encoding='cp1252') as file:
+                # Get the total number of lines in the file
+                total_lines = sum(1 for _ in file)
+
+            with open(the_log_name, 'r', encoding='cp1252') as file:
+                # for line in file:
+                for line in tqdm(file, total=total_lines, desc=reading_desc):
+                    words = line.split()[4:]
+                    # word_pair_dict = {}
+                    for pairs in words:
+                        try:
+                            ls_pairs = pairs.split("=")
+
+                            if ls_pairs[0] == 'logid':
+                                clean_log_id_str = re.sub(r'\D', '', ls_pairs[1])
+                                if clean_log_id_str in log_id_stats_dict.keys():
+                                    log_id_stats_dict[clean_log_id_str] = log_id_stats_dict[clean_log_id_str] + 1
+                                else:
+                                    log_id_stats_dict[clean_log_id_str] = 1
+
+                            elif ls_pairs[0] == 'level':
+                                log_level_str = ls_pairs[1]
+                                if log_level_str in log_level_stats_dict.keys():
+                                    log_level_stats_dict[log_level_str] = log_level_stats_dict[log_level_str] + 1
+                                else:
+                                    log_level_stats_dict[log_level_str] = 1
+
+                                if log_level_str == ''
+
+                        except IndexError:
+                            # ls_pairs = pairs.split("=")
+                            # word_pair_dict[ls_pairs[0]] = ""
+                            pass
+
+        log_id_stats_df = pd.DataFrame(list(log_id_stats_dict.items()), columns=['logid', 'logid_count'])
+        log_id_stats_df['%(percentage)'] = (log_id_stats_df['logid_count'] / log_id_stats_df['logid_count'].sum()) * 100
+        log_id_stats_df = log_id_stats_df.sort_values(by='%(percentage)', ascending=False)
+        log_id_stats_execl_name = 'Monthly_Logs_ID_Stats_' + month_str + ".xlsx"
+        log_id_stats_df.to_excel(
+            excel_writer=log_id_stats_execl_name,
+            sheet_name='Logs ID Stats',
+            float_format='%.6f',
+            engine='openpyxl',
+            index=False
+        )
+        print("DataFrame saved to " + log_id_stats_execl_name)
+
+        log_level_stats_df = pd.DataFrame(list(log_level_stats_dict.items()), columns=['level', 'level_count'])
+        log_level_stats_df['%(percentage)'] = (log_level_stats_df['level_count'] / log_level_stats_df['level_count'].sum()) * 100
+        log_level_stats_df = log_level_stats_df.sort_values(by='%(percentage)', ascending=False)
+        log_level_stats_execl_name = 'Monthly_Logs_Level_Stats_' + month_str + ".xlsx"
+        log_level_stats_df.to_excel(
+            excel_writer=log_id_stats_execl_name,
+            sheet_name='Logs Level Stats',
+            float_format='%.6f',
+            engine='openpyxl',
+            index=False
+        )
+        print("DataFrame saved to " + log_level_stats_execl_name)
+
+        return log_id_stats_df, log_level_stats_df
 
 
 if __name__ == '__main__':
