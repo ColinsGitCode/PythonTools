@@ -395,7 +395,7 @@ class LogAnalysis:
         return log_id_stats_df, log_level_stats_df
 
     @staticmethod
-    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str):
+    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str, save_format='xlsx'):
         log_files = Utils.get_all_files_in_directory(logs_path)
         split_results = []
         for the_log_name in log_files:
@@ -414,6 +414,10 @@ class LogAnalysis:
                     for pairs in words:
                         try:
                             ls_pairs = pairs.split("=")
+
+                            if ls_pairs[0] not in Const.SELECT_COLUMNS:
+                                continue
+
                             if ls_pairs[0] == 'level' and re.sub(r'[^a-zA-Z]', '', ls_pairs[1]) == level_filter:
                                 record_the_line = True
                                 word_pair_dict[ls_pairs[0]] = re.sub(r'[^a-zA-Z]', '', ls_pairs[1])
@@ -437,25 +441,36 @@ class LogAnalysis:
         monthly_specific_level_df_mem = monthly_specific_level_df.memory_usage(deep=True).sum()
         print('monthly_specific_level_df_mem: ', monthly_specific_level_df_mem / (1024))
 
-        monthly_specific_level_name = 'Monthly_' + level_filter + '_Logs_Data_' + month_str + ".xlsx"
-        monthly_specific_level_df.to_excel(
-            excel_writer=monthly_specific_level_name,
-            sheet_name='Monthly Specific Level Logs',
-            float_format='%.6f',
-            engine='openpyxl',
-            index=False
-        )
-        print("DataFrame saved to " + monthly_specific_level_name)
+        if save_format == 'xlsx':
+            monthly_specific_level_name = 'Monthly_' + level_filter + '_Logs_Data_' + month_str + ".xlsx"
+            monthly_specific_level_df.to_excel(
+                excel_writer=monthly_specific_level_name,
+                sheet_name='Monthly Specific Level Logs',
+                float_format='%.6f',
+                engine='openpyxl',
+                index=False
+            )
+            print("DataFrame saved to " + monthly_specific_level_name)
 
-        monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".xlsx"
-        monthly_specific_level_logid_stats_df.to_excel(
-            excel_writer=monthly_specific_level_logid_name,
-            sheet_name='Monthly Specific Level Logs Classified by Log ID',
-            float_format='%.6f',
-            engine='openpyxl',
-            index=False
-        )
-        print("DataFrame saved to " + monthly_specific_level_logid_name)
+            monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".xlsx"
+            monthly_specific_level_logid_stats_df.to_excel(
+                excel_writer=monthly_specific_level_logid_name,
+                sheet_name='Monthly Specific Level Logs Classified by Log ID',
+                float_format='%.6f',
+                engine='openpyxl',
+                index=False
+            )
+            print("DataFrame saved to " + monthly_specific_level_logid_name)
+        elif save_format == 'csv':
+            monthly_specific_level_name = 'Monthly_' + level_filter + '_Logs_Data_' + month_str + ".csv"
+            monthly_specific_level_df.to_csv(monthly_specific_level_name, index=False)
+            print("DataFrame saved to " + monthly_specific_level_name)
+
+            monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".csv"
+            monthly_specific_level_logid_stats_df.to_csv(monthly_specific_level_logid_name, index=False)
+            print("DataFrame saved to " + monthly_specific_level_logid_name)
+        else:
+            pass
 
         return monthly_specific_level_df, monthly_specific_level_logid_stats_df
 
@@ -466,7 +481,7 @@ if __name__ == '__main__':
     # id_df, level_df = LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
 
     logs_dir = 'LogTar/var/log/syslog/179.170.130.210.bn.2iij.net'
-    id_df, level_df = LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'alert')
+    id_df, level_df = LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'warning', 'csv')
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
