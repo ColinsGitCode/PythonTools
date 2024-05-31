@@ -24,8 +24,8 @@ class Const:
     SELECT_COLUMNS = [
         'date',
         'time',
-        'devname',
-        'devid',
+        # 'devname',
+        # 'devid',
         # 'eventtime',
         'type',
         'subtype',
@@ -39,11 +39,11 @@ class Const:
         'action',
         'service',
         'app',
-        'duration',
-        'sentbyte',
-        'rcvdbyte'
-        'logdesc',
-        'user',
+        # 'duration',
+        # 'sentbyte',
+        # 'rcvdbyte'
+        # 'logdesc',
+        # 'user',
         'logid'
     ]
 
@@ -184,11 +184,13 @@ class LogAnalysis:
         :param col_value:
         :return:
         """
+
         selected_df_by_column_name_and_value = LogAnalysis.select_by_column_name_and_value(
             total_logs_df,
             col_name,
             col_value
         )
+
         detail_result_total_df = LogAnalysis.analysis_selected_dataframe(selected_df_by_column_name_and_value)
         output_execl_name = "LongLogsAnalysisResultsTables\\" + logdate + "\\" + col_name + col_value.strip("\"") + "DetailAnalysisResults.xlsx"
         detail_result_total_df.to_excel(output_execl_name, index=False)
@@ -333,16 +335,14 @@ class LogAnalysis:
 
         for the_log_name in log_files:
             logs_date = the_log_name.split('_')[-1].split('.')[0]
-            reading_desc = "Reading logs on " + logs_date + " by lines: "
+            reading_desc = "Reading logs on " + logs_date + " by lines for LogID and LogLevel: "
             with open(the_log_name, 'r', encoding='cp1252') as file:
                 # Get the total number of lines in the file
                 total_lines = sum(1 for _ in file)
 
             with open(the_log_name, 'r', encoding='cp1252') as file:
-                # for line in file:
                 for line in tqdm(file, total=total_lines, desc=reading_desc):
                     words = line.split()[4:]
-                    # word_pair_dict = {}
                     for pairs in words:
                         try:
                             ls_pairs = pairs.split("=")
@@ -362,8 +362,6 @@ class LogAnalysis:
                                     log_level_stats_dict[log_level_str] = 1
 
                         except IndexError:
-                            # ls_pairs = pairs.split("=")
-                            # word_pair_dict[ls_pairs[0]] = ""
                             pass
 
         log_id_stats_df = pd.DataFrame(list(log_id_stats_dict.items()), columns=['logid', 'logid_count'])
@@ -395,12 +393,12 @@ class LogAnalysis:
         return log_id_stats_df, log_level_stats_df
 
     @staticmethod
-    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str, save_format='xlsx'):
+    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str, classify_log_id=False, save_format='csv'):
         log_files = Utils.get_all_files_in_directory(logs_path)
         split_results = []
         for the_log_name in log_files:
             logs_date = the_log_name.split('_')[-1].split('.')[0]
-            reading_desc = "Reading logs on " + logs_date + " by lines: "
+            reading_desc = "Reading logs on " + logs_date + " by filter(" + level_filter + "): "
             with open(the_log_name, 'r', encoding='cp1252') as file:
                 # Get the total number of lines in the file
                 total_lines = sum(1 for _ in file)
@@ -451,24 +449,26 @@ class LogAnalysis:
                 index=False
             )
             print("DataFrame saved to " + monthly_specific_level_name)
+            if classify_log_id:
+                monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".xlsx"
+                monthly_specific_level_logid_stats_df.to_excel(
+                    excel_writer=monthly_specific_level_logid_name,
+                    sheet_name='Monthly Specific Level Logs Classified by Log ID',
+                    float_format='%.6f',
+                    engine='openpyxl',
+                    index=False
+                )
+                print("DataFrame saved to " + monthly_specific_level_logid_name)
 
-            monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".xlsx"
-            monthly_specific_level_logid_stats_df.to_excel(
-                excel_writer=monthly_specific_level_logid_name,
-                sheet_name='Monthly Specific Level Logs Classified by Log ID',
-                float_format='%.6f',
-                engine='openpyxl',
-                index=False
-            )
-            print("DataFrame saved to " + monthly_specific_level_logid_name)
         elif save_format == 'csv':
             monthly_specific_level_name = 'Monthly_' + level_filter + '_Logs_Data_' + month_str + ".csv"
             monthly_specific_level_df.to_csv(monthly_specific_level_name, index=False)
             print("DataFrame saved to " + monthly_specific_level_name)
 
-            monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".csv"
-            monthly_specific_level_logid_stats_df.to_csv(monthly_specific_level_logid_name, index=False)
-            print("DataFrame saved to " + monthly_specific_level_logid_name)
+            if classify_log_id:
+                monthly_specific_level_logid_name = 'Monthly_' + level_filter + '_Logs_ID_Stats_' + month_str + ".csv"
+                monthly_specific_level_logid_stats_df.to_csv(monthly_specific_level_logid_name, index=False)
+                print("DataFrame saved to " + monthly_specific_level_logid_name)
         else:
             pass
 
@@ -481,7 +481,15 @@ if __name__ == '__main__':
     # id_df, level_df = LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
 
     logs_dir = 'LogTar/var/log/syslog/179.170.130.210.bn.2iij.net'
-    id_df, level_df = LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'warning', 'csv')
+
+    LogAnalysis.analysis_logs_monthly(logs_dir, '202405')
+
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'alert')
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'error')
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'information')
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'warning')
+
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'notice')
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
