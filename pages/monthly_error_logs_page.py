@@ -65,7 +65,7 @@ def analysis_selected_dataframe(selected_df: pd.DataFrame) -> pd.DataFrame:
 
 # Pages Contents Start
 # alert_df = load_data('Monthly_alert_Logs_Data_202405.csv')
-error_df = load_data('C:\\Users\\Public\\PythonCodes\\PythonTools\\LogAnalysis\\pages\\Monthly_error_Logs_Data_202405.csv')
+error_df = load_data('/LogAnalysis/LogAnalysis_20240527/Monthly_error_Logs_Data_202405.csv')
 error_df.drop(columns=[
     'devid',
     'eventtime',

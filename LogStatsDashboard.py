@@ -22,7 +22,7 @@ st.title('2024年5月のルーターログの統計')
 
 st.subheader('level　に基づく統計データ')
 
-log_level_df = load_execl('C:\\Users\\Public\\PythonCodes\\PythonTools\\LogAnalysis\\pages\\Monthly_Logs_Level_Stats_202405.xlsx')
+log_level_df = load_execl('/LogAnalysis/LogAnalysis_20240527/Monthly_Logs_Level_Stats_202405.xlsx')
 st.dataframe(
     data=log_level_df,
     height=200,
@@ -32,7 +32,7 @@ st.dataframe(
 
 st.subheader('logid　に基づく統計データ')
 
-log_id_df = load_execl('C:\\Users\\Public\\PythonCodes\\PythonTools\\LogAnalysis\\pages\\Monthly_Logs_ID_Stats_202405.xlsx')
+log_id_df = load_execl('/LogAnalysis/LogAnalysis_20240527/Monthly_Logs_ID_Stats_202405.xlsx')
 log_id_df[['logid']] = log_id_df[['logid']].astype(str)
 st.dataframe(
     data=log_id_df,
