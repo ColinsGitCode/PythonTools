@@ -393,7 +393,7 @@ class LogAnalysis:
         return log_id_stats_df, log_level_stats_df
 
     @staticmethod
-    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str, classify_log_id=False, save_format='csv'):
+    def analysis_logs_level_monthly(logs_path: str, month_str: str, level_filter: str, is_select=False, classify_log_id=False, save_format='csv'):
         log_files = Utils.get_all_files_in_directory(logs_path)
         split_results = []
         for the_log_name in log_files:
@@ -413,7 +413,7 @@ class LogAnalysis:
                         try:
                             ls_pairs = pairs.split("=")
 
-                            if ls_pairs[0] not in Const.SELECT_COLUMNS:
+                            if ls_pairs[0] not in Const.SELECT_COLUMNS and is_select:
                                 continue
 
                             if ls_pairs[0] == 'level' and re.sub(r'[^a-zA-Z]', '', ls_pairs[1]) == level_filter:
@@ -487,9 +487,12 @@ if __name__ == '__main__':
     LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'alert')
     LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'error')
     LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'information')
-    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'warning')
+    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'warning', is_select=True)
 
-    LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'notice')
+    # LogAnalysis.analysis_logs_level_monthly(logs_dir, '202405', 'notice')
+
+
+    # --------------------------------------------------------------------------------------------------------------------------
 
     # print(log_id_stats_df.iloc[0]['logid'])
     # print(log_id_stats_df.iloc[1]['logid'])
