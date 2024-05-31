@@ -64,7 +64,8 @@ def analysis_selected_dataframe(selected_df: pd.DataFrame) -> pd.DataFrame:
 
 
 # Pages Contents Start
-warning_df = load_data('/LogAnalysis/LogAnalysis_20240527/Monthly_warning_Logs_Data_202405.csv')
+# warning_df = load_data('/LogAnalysis/LogAnalysis_20240527/Monthly_warning_Logs_Data_202405.csv')
+warning_df = load_data('/root/PythonAutomatic/LogAnalysis/Monthly_warning_Logs_Data_202405.csv')
 
 # Set title and subtitle
 st.title('2024年5月 Warning レベルのルーターログのデータ')
